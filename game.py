@@ -1,10 +1,10 @@
 from typing import List, Tuple
 import random
 from matplotlib import pyplot as plt
-best_chromosome__ : Tuple[str, int] = ('', 0)
-best_chromosomes: List[int] = list()
+best_chromosome__ : Tuple[str, float] = ('', 0)
+best_chromosomes: List[float] = list()
 avg_chromosomes: List[float] = list()
-worse_chromosomes: List[int] = list()
+worse_chromosomes: List[float] = list()
 class Game:
     def __init__(self, levels):
         # Get a list of strings as levels
@@ -43,7 +43,7 @@ class Game:
 
         current_level = self.levels[self.current_level_index]
         steps = 0
-        max_scores: List[int] = list()
+        max_scores: List[float] = list()
         number_of_mashroom = 0
         number_of_dead_Gomba = 0
         end_of_game = False
@@ -82,7 +82,7 @@ class Game:
         ability += number_of_dead_Gomba * 2
         ability -= negative_action * 0.5
         if actions[self.current_level_len - 1] == 1:
-            ability += 1
+            ability += 3
 
         return end_of_game, ability
 
@@ -90,37 +90,47 @@ class Game:
         (a,b) = val
         return b
 
-    def find_result(self, probability, chromosomes:List[Tuple[str,int]]):
-        for (string, scor) in chromosomes:
+    def find_result(self, probability, chromosomes:List[Tuple[str,float]], new_res_prob: List[Tuple[str,float, float]]):
+        val = ('', 0)
+        j = 0
+        for (string, scor, scor_2) in new_res_prob:
             if scor >= probability:
-                return (string, scor)
+                return (string, scor_2)
+
+        string1, scor_, scor_2_ =new_res_prob[-1]
+        return (string1, scor_2_)
 
 
-    def select(self, type_selection,chromosomes  :List[Tuple[str, int]], number_of_selection):
+    def select(self, type_selection,chromosomes  :List[Tuple[str, float]], number_of_selection):
         if type_selection == 0:
             # if type selection equal zero that's mean, we only have a selection of the best
             chromosomes.sort(key=self.my_func, reverse=True)
             return chromosomes[:number_of_selection]
         else:
-            possibility_of_selection: List[Tuple[str, int]] = list()
+            possibility_of_selection: List[Tuple[str, float]] = list()
             total_value = 0
             for value in chromosomes:
                 string_, score = value
                 total_value += score
 
             last_value = 0
+            i = 0
             # maximum of each interval
+            new_res_probality : List[Tuple[str, float, float]] = list()
             for val in chromosomes:
                 string_2, score_2 = val
+                tmp = score_2
                 score_2 = score_2/total_value
                 score_2 += last_value
+                new_res_probality.append((chromosomes[i][0], score_2, tmp))
+                i += 1
                 last_value = score_2
 
             random_selection_by_probability = 0
             for i in range(number_of_selection):
                 random_selection_by_probability = random.randint(0, 100)
                 random_selection_by_probability = random_selection_by_probability/100
-                possibility_of_selection.append(self.find_result(random_selection_by_probability, chromosomes))
+                possibility_of_selection.append(self.find_result(random_selection_by_probability, chromosomes, new_res_probality))
             return possibility_of_selection
 
 
@@ -155,11 +165,11 @@ def calculate_score_for_initialize_population(initialize_population, permission)
         end_of_game, ability = my_game.get_score(ini_pop, permission)
         chromosomes.append((ini_pop, ability))
 
-def cross_over_of_parent(parent:List[Tuple[str, int]], type_of_cross_over):
+def cross_over_of_parent(parent:List[Tuple[str, float]], type_of_cross_over):
     cross_over_parents :List[str] = list()
     for i in range(0,len(parent),2):
         parentA , score = parent[i]
-        parentB, score =parent[i+1]
+        parentB, score = parent[i+1]
         child_1, child_2 = my_game.cross_over(parentA, parentB, type_of_cross_over)
         cross_over_parents.append("".join(child_1))
         cross_over_parents.append("".join(child_2))
@@ -202,7 +212,7 @@ def find_best_avg_worst_chromosomes():
 
 
 
-chromosomes :List[Tuple[str, int]] = list()
+chromosomes :List[Tuple[str, float]] = list()
 my_game = Game(["____G_G_MMM___L__L_G_____G___M_L__G__L_GM____L____"])
 my_game.load_next_level()
 size_of_population = int(input("Enter the number of the initial population you want: "))
@@ -212,7 +222,7 @@ calculate_score_for_initialize_population(initialize_population, permission)
 type_of_selections= int(input("Enter your approach for selection(0-best chromosomes , 1-weighted selection based on fitness evaluation): "))
 type_of_cross_over = int(input("Enter type of cross over (0-single point 1-double points): "))
 mutation_probability = float(input("Mutation probability: (like 0.20): "))
-generation = 100
+generation = 200
 while True:
     select_parent = my_game.select(type_of_selections, chromosomes, size_of_population)
     children = cross_over_of_parent(select_parent, type_of_cross_over)
